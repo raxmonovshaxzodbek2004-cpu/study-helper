@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TATU | Imtihon Tizimi</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --primary: #007bff;
+            --success: #28a745;
+            --danger: #dc3545;
+            --bg: #f4f7f9;
+            --text: #333;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 0;
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .timer-badge {
+            background: #fff5f5;
+            color: var(--danger);
+            border: 1px solid #feb2b2;
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 20px;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        /* Main Layout */
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 15px 120px 15px;
+        }
+
+        .question-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border-left: 5px solid var(--primary);
+        }
+
+        .q-num {
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 14px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .q-text {
+            font-size: 17px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        /* Options */
+        .options-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .option-label {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border: 1.5px solid #edf2f7;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .option-label:active {
+            transform: scale(0.98);
+        }
+
+        .option-label input {
+            width: 20px;
+            height: 20px;
+            margin-right: 15px;
+            accent-color: var(--primary);
+        }
+
+        .option-label.selected {
+            background: #ebf8ff;
+            border-color: var(--primary);
+        }
+
+        /* Bottom Navigation Bar (Mobile Optimized) */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .nav-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: bold;
+            color: #666;
+            padding: 0 5px;
+        }
+
+        .nav-grid {
+            display: flex;
+            overflow-x: auto;
+            gap: 8px;
+            padding-bottom: 5px;
+            scrollbar-width: none;
+            /* Firefox */
+        }
+
+        .nav-grid::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Chrome/Safari */
+
+        .nav-item {
+            min-width: 40px;
+            height: 40px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            color: #475569;
+            flex-shrink: 0;
+        }
+
+        .nav-item.active {
+            background: var(--success);
+            color: white;
+        }
+
+        .finish-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            width: 100%;
+        }
+
+        @media (min-width: 801px) {
+            .nav-grid {
+                flex-wrap: wrap;
+            }
+
+            .bottom-nav {
+                position: static;
+                margin-top: 20px;
+            }
+        }
+
+        /* Result Styles */
+        .option-label.correct {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .option-label.incorrect {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+
+        .nav-item.correct {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .nav-item.incorrect {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .result-header {
+            background: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            display: none;
+            /* Initially hidden */
+        }
+
+        .result-score {
+            flex-direction: column;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .score-circle {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 5px solid var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h3 style="margin: 0 0 10px 0; color: #333;">{{ subject_name }}</h3>
+        <div class="timer-badge" id="timer">80:00</div>
+    </div>
+
+    <div class="container">
+        <div id="result-header" class="result-header">
+            <div class="result-score">
+                <div class="score-circle" id="score-circle">0%</div>
+                <h2 id="score-text">Natija: 0/50</h2>
+            </div>
+            <p>Batafsil xatolar pastda ko'rsatilgan 👇</p>
+        </div>
+
+        <div id="questions-list">
+        </div>
+
+        <div class="bottom-nav">
+            <div class="nav-stats">
+                <span id="answered-count">Bajarildi: 0/50</span>
+                <span>@study_helperv3_bot</span>
+            </div>
+            <div class="nav-grid" id="nav-grid">
+            </div>
+            <button onclick="finishExam()" class="finish-btn">Imtihonni tugatish</button>
+        </div>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        let examQuestions = [];
+        let answers = {};
+        let isFinished = false;
+
+        async function loadTests() {
+            const baseId = window.location.pathname.split('/').pop();
+            const res = await fetch(`/get-tests?base_id=${baseId}&mode=${MODE}`);
+            examQuestions = await res.json();
+            render();
+            // Update total count immediately
+            document.getElementById('answered-count').innerText = `Bajarildi: 0/${examQuestions.length}`;
+        }
+
+        function parse(text) {
+            const lines = text.split('\n');
+            let q = "", opts = [];
+            lines.forEach(l => {
+                if (l.trim().match(/^[A-D][).]/)) opts.push(l.trim());
+                else if (opts.length === 0) q += l + " ";
+            });
+            return { q, opts };
+        }
+
+        function render() {
+            const list = document.getElementById('questions-list');
+            const grid = document.getElementById('nav-grid');
+
+            examQuestions.forEach((t, i) => {
+                const card = document.createElement('div');
+                card.className = 'question-card';
+                card.id = `q-block-${i}`;
+
+                let optsHtml = '';
+                const letters = ['A', 'B', 'C', 'D'];
+
+                letters.forEach((L) => {
+                    // Agar variant bo'sh bo'lmasa ko'rsatamiz
+                    if (t.options[L]) {
+                        optsHtml += `
+                            <label class="option-label" id="label-${i}-${L}">
+                                <input type="radio" name="q${i}" onchange="selectOpt(${i}, '${L}')">
+                                <span class="option-text"><b>${L}.</b> ${t.options[L]}</span>
+                            </label>`;
+                    }
+                });
+
+                card.innerHTML = `
+                    <span class="q-num">${i + 1}-SAVOL</span>
+                    <div class="q-text">${t.question}</div>
+                    <div class="options-list">${optsHtml}</div>
+                `;
+                list.appendChild(card);
+
+                // Navigatsiya katakchasi
+                const dot = document.createElement('div');
+                dot.className = 'nav-item';
+                dot.id = `nav-${i}`;
+                dot.innerText = i + 1;
+                dot.onclick = () => document.getElementById(`q-block-${i}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+                grid.appendChild(dot);
+            });
+        }
+
+        function selectOpt(qIdx, optKey) {
+            // Agar avval belgilangan bo'lsa va bu Yodlash rejimi bo'lsa, qayta belgilash mumkin emas
+            if (MODE === 'memorize' && answers[qIdx]) return;
+
+            answers[qIdx] = optKey;
+            document.getElementById(`nav-${qIdx}`).classList.add('active');
+
+            // UI bezak: tanlangan variantni bo'yash
+            const letters = ['A', 'B', 'C', 'D'];
+            letters.forEach(L => {
+                const lbl = document.getElementById(`label-${qIdx}-${L}`);
+                if (lbl) lbl.classList.remove('selected');
+            });
+
+            const selectedLbl = document.getElementById(`label-${qIdx}-${optKey}`);
+            if (selectedLbl) selectedLbl.classList.add('selected');
+
+            document.getElementById('answered-count').innerText = `Bajarildi: ${Object.keys(answers).length}/${examQuestions.length}`;
+
+            // Memorize Mode Logikasi: Darhol Tekshirish
+            if (MODE === 'memorize') {
+                const q = examQuestions[qIdx];
+                const correctAns = q.ans.trim().charAt(0).toUpperCase();
+                const navItem = document.getElementById(`nav-${qIdx}`);
+
+                if (optKey === correctAns) {
+                    selectedLbl.classList.add('correct');
+                    navItem.className = 'nav-item correct';
+                } else {
+                    selectedLbl.classList.add('incorrect');
+                    navItem.className = 'nav-item incorrect';
+                    // To'g'ri javobni ko'rsatish
+                    const correctLbl = document.getElementById(`label-${qIdx}-${correctAns}`);
+                    if (correctLbl) correctLbl.classList.add('correct');
+                }
+            }
+        }
+
+        // Mode Configuration
+        const MODE = "{{ mode }}"; // 'exam' or 'memorize'
+
+        // Taymer
+        let sec = 0;
+        let timerInterval;
+
+        function startTimer() {
+            if (MODE === 'exam') {
+                sec = 80 * 60; // 80 daqiqa
+                timerInterval = setInterval(() => {
+                    if (isFinished) return;
+                    sec--;
+                    updateTimerDisplay(sec);
+                    if (sec <= 0) finishExam();
+                }, 1000);
+            } else {
+                // Memorize mode: count up
+                sec = 0;
+                timerInterval = setInterval(() => {
+                    if (isFinished) return;
+                    sec++;
+                    updateTimerDisplay(sec);
+                }, 1000);
+            }
+        }
+
+        function updateTimerDisplay(s) {
+            let h = Math.floor(s / 3600);
+            let m = Math.floor((s % 3600) / 60);
+            let remS = s % 60;
+
+            const hStr = h < 10 ? '0' + h : h;
+            const mStr = m < 10 ? '0' + m : m;
+            const sStr = remS < 10 ? '0' + remS : remS;
+
+            if (h > 0) {
+                document.getElementById('timer').innerText = `${hStr}:${mStr}:${sStr}`;
+            } else {
+                document.getElementById('timer').innerText = `${mStr}:${sStr}`;
+            }
+        }
+
+        startTimer();
+
+
+
+        function finishExam() {
+            if (isFinished) {
+                tg.close();
+                return;
+            }
+
+            if (!confirm(MODE === 'exam' ? "Imtihonni yakunlaysizmi?" : "Mashg'ulotni tugatasizmi?")) return;
+
+
+            isFinished = true;
+            let correctCount = 0;
+            const letters = ['A', 'B', 'C', 'D'];
+
+            examQuestions.forEach((t, i) => {
+                const userAns = answers[i];
+                // Correct logic to get just the letter (A, B, C, D)
+                const correctAns = t.ans.trim().charAt(0).toUpperCase();
+
+                const qBlock = document.getElementById(`q-block-${i}`);
+                const navItem = document.getElementById(`nav-${i}`);
+
+                // Disable inputs
+                letters.forEach(L => {
+                    const inp = document.querySelector(`input[name="q${i}"][onchange="selectOpt(${i}, '${L}')"]`);
+                    if (inp) inp.disabled = true;
+                });
+
+                if (userAns === correctAns) {
+                    correctCount++;
+                    navItem.className = 'nav-item correct';
+                    const lbl = document.getElementById(`label-${i}-${userAns}`);
+                    if (lbl) lbl.classList.add('correct');
+                } else {
+                    navItem.className = 'nav-item incorrect';
+                    // User selection (if any) -> Red
+                    if (userAns) {
+                        const lblInfo = document.getElementById(`label-${i}-${userAns}`);
+                        if (lblInfo) lblInfo.classList.add('incorrect');
+                    }
+                    // Correct answer -> Green
+                    const lblCorrect = document.getElementById(`label-${i}-${correctAns}`);
+                    if (lblCorrect) lblCorrect.classList.add('correct');
+                }
+            });
+
+            // Show Result Header
+            const percentage = Math.round((correctCount / examQuestions.length) * 100);
+            document.getElementById('result-header').style.display = 'block';
+            document.getElementById('score-circle').innerText = `${percentage}%`;
+            document.getElementById('score-text').innerText = `Natija: ${correctCount}/${examQuestions.length}`;
+
+            document.querySelector('.finish-btn').innerText = "Chiqish";
+
+            // Ulashish tugmasini qo'shish (Faqat Imtihon rejimida)
+            if (MODE === 'exam' && !document.getElementById('share-btn')) {
+                const shareBtn = document.createElement('button');
+                shareBtn.id = 'share-btn';
+                shareBtn.className = 'finish-btn';
+                shareBtn.style.backgroundColor = '#17a2b8';
+                shareBtn.style.marginTop = '10px';
+                shareBtn.innerText = "📤 Natijani ulashish";
+
+                // Vaqtni hisoblash (Sarflangan vaqt = Jami vaqt - Qolgan vaqt)
+                let totalSeconds = 80 * 60;
+                let spentSeconds = totalSeconds - sec;
+
+                // Formatlash (MM:SS) userga qancha vaqt ketgani qiziq
+                let spM = Math.floor(spentSeconds / 60);
+                let spS = spentSeconds % 60;
+                let timeStr = `${spM < 10 ? '0' + spM : spM}:${spS < 10 ? '0' + spS : spS}`;
+                // Agar 1 soatdan oshsa soatni ham qo'shamiz (ixtiyoriy, lekin 80 min uchun kerak bo'lishi mumkin)
+                if (Math.floor(spentSeconds / 3600) > 0) {
+                    let spH = Math.floor(spentSeconds / 3600);
+                    spM = Math.floor((spentSeconds % 3600) / 60);
+                    timeStr = `${spH < 10 ? '0' + spH : spH}:${spM < 10 ? '0' + spM : spM}:${spS < 10 ? '0' + spS : spS}`;
+                }
+                // Base ID ni URL dan olish
+                const baseId = window.location.pathname.split('/').pop();
+
+                shareBtn.onclick = () => {
+                    // Format: res_{correct}_{total}_{time}_{baseId}
+                    const query = `res_${correctCount}_${examQuestions.length}_${timeStr}_${baseId}`;
+                    try {
+                        tg.switchInlineQuery(query, ['users', 'groups', 'channels']);
+                    } catch (e) {
+                        const err = e.message || e.toString();
+                        if (err.includes("WebAppInlineModeDisabled")) {
+                            alert("Xatolik: Botda Inline Mode yoqilmagan!\n\nIltimos, @BotFather ga kiring -> Bot Settings -> Inline Mode'ni yoqing.");
+                        } else {
+                            alert("Xatolik: " + err);
+                        }
+                    }
+                };
+
+                // Tugatish tugmasidan keyin joylash
+                document.querySelector('.bottom-nav').insertBefore(shareBtn, document.querySelector('.bottom-nav').lastElementChild);
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            // Send data to bot (optional)
+            // tg.sendData(JSON.stringify({score: correctCount, total: examQuestions.length}));
+        }
+
+        loadTests();
+    </script>
+</body>
+
+
+</html>
